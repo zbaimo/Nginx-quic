@@ -20,11 +20,21 @@
 
 ### 方式一：使用预构建镜像（推荐）
 
-从 GitHub Container Registry 拉取镜像：
+从 GitHub Container Registry 拉取最新版本（多架构支持）：
 
 ```bash
+# 拉取 latest 标签（推荐）
 docker pull ghcr.io/zbaimo/nginx-quic:latest
+
+# 直接运行
+docker run -d -p 80:80 -p 443:443 -p 443:443/udp ghcr.io/zbaimo/nginx-quic:latest
 ```
+
+**支持的架构：**
+- `linux/amd64` (x86_64)
+- `linux/arm64` (aarch64)
+
+Docker 会自动选择适合你系统的架构版本。
 
 ### 方式二：本地构建
 
@@ -71,7 +81,7 @@ docker-compose down
 ### 使用 Docker 运行
 
 ```bash
-# 运行容器
+# 运行容器（使用 latest 标签）
 docker run -d \
   --name nginx-quic \
   -p 80:80 \
@@ -82,6 +92,12 @@ docker run -d \
   -v $(pwd)/ssl:/etc/nginx/ssl:ro \
   ghcr.io/zbaimo/nginx-quic:latest
 ```
+
+**可用的镜像标签：**
+- `latest` - 最新稳定版本（推荐）
+- `main` - 主分支最新构建
+- `v1.0.0` - 特定版本（如果打了标签）
+- `sha-xxxxxxx` - 特定提交的构建
 
 ## 🔧 配置说明
 
@@ -172,11 +188,14 @@ Nginx 编译时启用的核心模块：
 
 本项目使用 GitHub Actions 自动构建和发布 Docker 镜像：
 
-- ✅ 每次推送到 `main` 分支时自动构建
+- ✅ 推送到 `main` 分支 → 自动构建并标记为 `latest`
 - ✅ 每周一自动构建最新版本
 - ✅ 支持手动触发构建
 - ✅ 自动发布到 GitHub Container Registry
-- ✅ 多架构构建（amd64, arm64）
+- ✅ 多架构构建（amd64, arm64）- Docker 自动选择合适架构
+- ✅ 支持版本标签（如 v1.0.0）
+
+**镜像地址：** `ghcr.io/zbaimo/nginx-quic:latest`
 
 查看构建状态：[Actions](https://github.com/ZBaimo/Nginx-quic/actions)
 
