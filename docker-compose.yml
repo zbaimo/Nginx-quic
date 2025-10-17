@@ -2,7 +2,6 @@ version: '3.8'
 
 services:
   nginx-quic:
-<<<<<<< HEAD
     # 使用预构建镜像（推荐）
     image: ghcr.io/zbaimo/nginx-quic:latest
     # 或者本地构建（取消下面的注释）
@@ -12,14 +11,6 @@ services:
     #   args:
     #     NGINX_VERSION: 1.27.2
     #     OPENSSL_VERSION: 3.3.2
-=======
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        NGINX_VERSION: 1.27.2
-        OPENSSL_VERSION: 3.3.2
->>>>>>> de793100f4bd6efb36f80dc1d3fc60f872670b44
     container_name: nginx-quic
     restart: unless-stopped
     ports:
