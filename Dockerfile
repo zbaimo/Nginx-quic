@@ -63,7 +63,8 @@ RUN ./configure \
     --with-openssl=/src/openssl-${OPENSSL_VERSION} \
     --with-openssl-opt='enable-ktls' && \
     make -j$(nproc) && \
-    make install
+    make install && \
+    mkdir -p /usr/lib/nginx/modules
 
 # Runtime stage
 FROM alpine:3.19
