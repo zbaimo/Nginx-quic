@@ -1,0 +1,28 @@
+# SSL Certificates
+ssl/
+*.pem
+*.key
+*.crt
+*.csr
+
+# Logs
+logs/
+*.log
+
+# HTML content
+html/
+
+# Docker
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
