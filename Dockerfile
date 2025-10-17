@@ -63,8 +63,7 @@ RUN ./configure \
     --with-openssl=/src/openssl-${OPENSSL_VERSION} \
     --with-openssl-opt='enable-ktls' && \
     make -j$(nproc) && \
-    make install && \
-    mkdir -p /usr/lib/nginx/modules
+    make install
 
 # Runtime stage
 FROM alpine:3.19
@@ -83,7 +82,6 @@ RUN addgroup -g 101 -S nginx && \
 # Copy nginx binary and configuration from builder
 COPY --from=builder /usr/sbin/nginx /usr/sbin/nginx
 COPY --from=builder /etc/nginx /etc/nginx
-COPY --from=builder /usr/lib/nginx /usr/lib/nginx
 
 # Create necessary directories
 RUN mkdir -p /var/cache/nginx/client_temp \
