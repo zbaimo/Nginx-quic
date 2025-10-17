@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  nginx-quic:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NGINX_VERSION: 1.27.2
+        OPENSSL_VERSION: 3.3.2
+    container_name: nginx-quic
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # QUIC/HTTP3
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./html:/usr/share/nginx/html:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx-logs:/var/log/nginx
+      - nginx-cache:/var/cache/nginx
+    environment:
+      - TZ=Asia/Shanghai
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - nginx-network
+
+volumes:
+  nginx-logs:
+  nginx-cache:
+
+networks:
+  nginx-network:
+    driver: bridge
+
