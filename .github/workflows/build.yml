@@ -81,8 +81,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            NGINX_VERSION=1.27.2
-            OPENSSL_VERSION=3.3.2
+            NGINX_VERSION=1.28.0
+            OPENSSL_VERSION=3.6.0
 
       - name: Generate artifact attestation
         if: github.event_name != 'pull_request'
