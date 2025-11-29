@@ -2,8 +2,8 @@
 FROM alpine:3.19 AS builder
 
 # Define versions
-ARG NGINX_VERSION=1.27.2
-ARG OPENSSL_VERSION=3.3.2
+ARG NGINX_VERSION=1.28.0
+ARG OPENSSL_VERSION=3.6.0
 
 # Install build dependencies
 RUN apk add --no-cache \
