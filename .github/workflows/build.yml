@@ -7,13 +7,28 @@ on:
       - develop
     tags:
       - 'v*'
+    paths:
+      - 'Dockerfile'
+      - 'nginx.conf'
+      - 'default.conf'
+      - '.github/workflows/build.yml'
   pull_request:
     branches:
       - main
+    paths:
+      - 'Dockerfile'
+      - 'nginx.conf'
+      - 'default.conf'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
   schedule:
     # Build every Monday at 00:00 UTC
     - cron: '0 0 * * 1'
+
+# 防止同一时间多次运行
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   GHCR_REGISTRY: ghcr.io
@@ -21,14 +36,14 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       id-token: write
       attestations: write
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -64,10 +79,6 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/nginx-quic
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=ref,event=branch
-            type=sha
 
       - name: Build and push Docker image
         id: build
@@ -91,4 +102,3 @@ jobs:
           subject-name: ${{ env.GHCR_REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
-
