@@ -76,22 +76,7 @@ build-args: |
 
 > 💡 **提示**：这三处必须保持一致，否则会导致构建版本不匹配。
 
-#### 3. 本地测试构建
-
-```bash
-# 构建镜像
-docker build -t nginx-quic:test .
-
-# 验证版本
-docker run --rm nginx-quic:test nginx -v
-# 应输出: nginx version: nginx/1.30.0
-
-# 检查 QUIC 支持
-docker run --rm nginx-quic:test nginx -V 2>&1 | grep http_v3
-# 应输出: --with-http_v3_module
-```
-
-#### 4. 提交并推送
+#### 3. 提交并推送
 
 ```bash
 git add Dockerfile docker-compose.yml .github/workflows/build.yml
@@ -102,24 +87,9 @@ git push
 推送后 GitHub Actions 会自动：
 - ✅ 构建多架构镜像（amd64 + arm64）
 - ✅ 推送到 Docker Hub 和 GHCR
-- ✅ 标记为 `latest` 标签
+- ✅ 标记为 `latest` 和日期版本标签（如 `v26.5.17`）
 
 查看构建进度：[Actions](https://github.com/ZBaimo/Nginx-quic/actions)
-
-#### 5. 快速更新命令
-
-**Linux/macOS:**
-```bash
-# 一键更新版本号（替换为新版本）
-sed -i 's/NGINX_VERSION=1.30.0/NGINX_VERSION=新版本号/' Dockerfile
-sed -i 's/OPENSSL_VERSION=4.0.0/OPENSSL_VERSION=新版本号/' Dockerfile
-```
-
-**Windows PowerShell:**
-```powershell
-(Get-Content Dockerfile) -replace 'NGINX_VERSION=1.30.0','NGINX_VERSION=新版本号' | Set-Content Dockerfile
-(Get-Content Dockerfile) -replace 'OPENSSL_VERSION=4.0.0','OPENSSL_VERSION=新版本号' | Set-Content Dockerfile
-```
 
 ### SSL 证书配置
 
