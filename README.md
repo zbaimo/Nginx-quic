@@ -76,43 +76,6 @@ build-args: |
 
 > 💡 **提示**：这三处必须保持一致，否则会导致构建版本不匹配。
 
-#### 3. 提交并推送
-
-```bash
-git add Dockerfile docker-compose.yml .github/workflows/build.yml
-git commit -m "chore: 更新 Nginx 到 x.x.x 和 OpenSSL 到 x.x.x"
-git push
-```
-
-推送后 GitHub Actions 会自动：
-- ✅ 构建多架构镜像（amd64 + arm64）
-- ✅ 推送到 Docker Hub 和 GHCR
-- ✅ 标记为 `latest` 和日期版本标签（如 `v26.5.17`）
-
-查看构建进度：[Actions](https://github.com/ZBaimo/Nginx-quic/actions)
-
-### SSL 证书配置
-
-#### 测试环境（自签名证书）
-
-```bash
-./generate-ssl.sh
-```
-
-#### 生产环境（Let's Encrypt）
-
-```bash
-# 安装 certbot
-apt install certbot
-
-# 获取证书
-certbot certonly --standalone -d yourdomain.com
-
-# 复制证书到项目目录
-cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem ./ssl/cert.pem
-cp /etc/letsencrypt/live/yourdomain.com/privkey.pem ./ssl/key.pem
-```
-
 ### 验证 HTTP/3
 
 ```bash
