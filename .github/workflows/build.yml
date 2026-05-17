@@ -70,6 +70,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      - name: Generate version tag
+        id: version
+        run: |
+          # Generate version based on current date: vYY.M.D (e.g., v26.5.17)
+          VERSION="v$(date -u +'%-y.%-m.%-d')"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version tag: $VERSION"
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -79,6 +87,7 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/nginx-quic
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.version.outputs.version }}
 
       - name: Build and push Docker image
         id: build
