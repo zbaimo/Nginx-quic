@@ -1,4 +1,4 @@
-name: Build and Push Nginx with QUIC
+name: Auto Update and Build Nginx with QUIC
 
 on:
   push:
@@ -22,8 +22,8 @@ on:
       - '.github/workflows/build.yml'
   workflow_dispatch:
   schedule:
-    # Build every Monday at 00:00 UTC
-    - cron: '0 0 * * 1'
+    # Check for updates every day at 00:00 UTC
+    - cron: '0 0 * * *'
 
 # 防止同一时间多次运行
 concurrency:
@@ -36,8 +36,103 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  check-and-update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      nginx_version: ${{ steps.get-versions.outputs.nginx_version }}
+      openssl_version: ${{ steps.get-versions.outputs.openssl_version }}
+      has_update: ${{ steps.check-update.outputs.has_update }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Get current versions from Dockerfile
+        id: current-versions
+        run: |
+          NGINX_CURRENT=$(grep 'ARG NGINX_VERSION=' Dockerfile | cut -d'=' -f2)
+          OPENSSL_CURRENT=$(grep 'ARG OPENSSL_VERSION=' Dockerfile | cut -d'=' -f2)
+          echo "nginx_current=$NGINX_CURRENT" >> $GITHUB_OUTPUT
+          echo "openssl_current=$OPENSSL_CURRENT" >> $GITHUB_OUTPUT
+          echo "Current Nginx: $NGINX_CURRENT"
+          echo "Current OpenSSL: $OPENSSL_CURRENT"
+
+      - name: Get latest stable versions
+        id: get-versions
+        run: |
+          # Get latest Nginx stable version
+          NGINX_LATEST=$(curl -s https://nginx.org/en/download.html | grep -oP 'nginx-\K[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "nginx_version=$NGINX_LATEST" >> $GITHUB_OUTPUT
+          echo "Latest Nginx: $NGINX_LATEST"
+
+          # Get latest OpenSSL version
+          OPENSSL_LATEST=$(curl -s https://api.github.com/repos/openssl/openssl/releases/latest | grep -oP '"tag_name":\s*"openssl-\K[^"]+' | sed 's/_/./g')
+          if [ -z "$OPENSSL_LATEST" ]; then
+            # Fallback: parse from downloads page
+            OPENSSL_LATEST=$(curl -s https://www.openssl.org/source/ | grep -oP 'openssl-\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1)
+          fi
+          echo "openssl_version=$OPENSSL_LATEST" >> $GITHUB_OUTPUT
+          echo "Latest OpenSSL: $OPENSSL_LATEST"
+
+      - name: Check if update needed
+        id: check-update
+        run: |
+          NGINX_CURRENT=${{ steps.current-versions.outputs.nginx_current }}
+          OPENSSL_CURRENT=${{ steps.current-versions.outputs.openssl_current }}
+          NGINX_LATEST=${{ steps.get-versions.outputs.nginx_version }}
+          OPENSSL_LATEST=${{ steps.get-versions.outputs.openssl_version }}
+
+          HAS_UPDATE="false"
+          if [ "$NGINX_CURRENT" != "$NGINX_LATEST" ] || [ "$OPENSSL_CURRENT" != "$OPENSSL_LATEST" ]; then
+            HAS_UPDATE="true"
+            echo "🆕 New versions available!"
+            echo "Nginx: $NGINX_CURRENT → $NGINX_LATEST"
+            echo "OpenSSL: $OPENSSL_CURRENT → $OPENSSL_LATEST"
+          else
+            echo "✅ Already up to date"
+          fi
+          echo "has_update=$HAS_UPDATE" >> $GITHUB_OUTPUT
+
+      - name: Update versions in files
+        if: steps.check-update.outputs.has_update == 'true'
+        run: |
+          NGINX_LATEST=${{ steps.get-versions.outputs.nginx_version }}
+          OPENSSL_LATEST=${{ steps.get-versions.outputs.openssl_version }}
+          NGINX_CURRENT=${{ steps.current-versions.outputs.nginx_current }}
+          OPENSSL_CURRENT=${{ steps.current-versions.outputs.openssl_current }}
+
+          # Update Dockerfile
+          sed -i "s/NGINX_VERSION=$NGINX_CURRENT/NGINX_VERSION=$NGINX_LATEST/g" Dockerfile
+          sed -i "s/OPENSSL_VERSION=$OPENSSL_CURRENT/OPENSSL_VERSION=$OPENSSL_LATEST/g" Dockerfile
+
+          # Update docker-compose.yml
+          sed -i "s/NGINX_VERSION: $NGINX_CURRENT/NGINX_VERSION: $NGINX_LATEST/g" docker-compose.yml
+          sed -i "s/OPENSSL_VERSION: $OPENSSL_CURRENT/OPENSSL_VERSION: $OPENSSL_LATEST/g" docker-compose.yml
+
+          # Update build.yml
+          sed -i "s/NGINX_VERSION=$NGINX_CURRENT/NGINX_VERSION=$NGINX_LATEST/g" .github/workflows/build.yml
+          sed -i "s/OPENSSL_VERSION=$OPENSSL_CURRENT/OPENSSL_VERSION=$OPENSSL_LATEST/g" .github/workflows/build.yml
+
+          echo "Updated all version references"
+
+      - name: Commit and push changes
+        if: steps.check-update.outputs.has_update == 'true'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add Dockerfile docker-compose.yml .github/workflows/build.yml
+          git commit -m "chore: auto-update Nginx to ${{ steps.get-versions.outputs.nginx_version }} and OpenSSL to ${{ steps.get-versions.outputs.openssl_version }}"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+
+  build-and-push:
+    needs: check-and-update
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule' || needs.check-and-update.outputs.has_update == 'true'
     permissions:
       contents: read
       packages: write
@@ -101,8 +196,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            NGINX_VERSION=1.30.0
-            OPENSSL_VERSION=4.0.0
+            NGINX_VERSION=${{ needs.check-and-update.outputs.nginx_version || '1.30.0' }}
+            OPENSSL_VERSION=${{ needs.check-and-update.outputs.openssl_version || '4.0.0' }}
 
       - name: Generate artifact attestation
         if: github.event_name != 'pull_request'
