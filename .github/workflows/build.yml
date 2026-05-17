@@ -22,8 +22,8 @@ on:
       - '.github/workflows/build.yml'
   workflow_dispatch:
   schedule:
-    # Check for updates every day at 00:00 UTC
-    - cron: '0 0 * * *'
+    # Check for updates every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
 
 # 防止同一时间多次运行
 concurrency:
