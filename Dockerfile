@@ -2,7 +2,7 @@
 FROM alpine:3.19 AS builder
 
 # Define versions
-ARG NGINX_VERSION=1.31.1
+ARG NGINX_VERSION=1.31.2
 ARG OPENSSL_VERSION=4.0.1
 
 # Install build dependencies
